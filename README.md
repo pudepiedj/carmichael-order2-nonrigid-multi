@@ -7,7 +7,7 @@ This repository publishes **1,407 Carmichael numbers of order 2** (OEIS [A175531
   $$n \equiv p \pmod{p^2-1}$$
 
   instead of $n \equiv 1$: **839 with two** such primes, **11 with three** and **1 with four**. The one with four has 2,712 digits and 520 prime factors. As far as we know it is the first.
-- **556 divisible by 5 or 7**: 8 by 5 and 548 by 7. None of these has such a prime.
+- **556 divisible by 5 or 7**: 8 by 5 and 548 by 7. None of these contains a non-rigid prime as a factor.
 
 | | numbers | smallest found | file |
 |---|---|---|---|

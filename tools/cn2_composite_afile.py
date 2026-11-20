@@ -67,7 +67,7 @@ HEADER = """\
 # not necessarily the smallest that exists. No term below 10^30 is of any of these kinds.
 # Every number below was verified directly: its listed prime factors are distinct primes whose product
 # is k, and for every prime p | k, k == 1 or k == p (mod p^2-1).
-# Columns: k  log10(k)  the type-p (non-rigid) primes of k, joined by '.' ('-' if none, i.e. k is rigid)
+# Columns: k  log10(k)  the type-p (non-rigid) primes of k, separated by commas ('-' if none, i.e. k is rigid)
 #          all prime factors of k, increasing.
 #
 # Part 1: {n1} terms divisible by 5. All are rigid.
@@ -91,7 +91,7 @@ TITLES = {1: 'Part 1: terms divisible by 5 (rigid).',
 
 def fmt(n, primes, tp):
     lg = f'{math.log10(n):.2f}' if n < 10 ** 300 else f'{len(str(n)) - 1 + math.log10(int(str(n)[:15]) / 10 ** 14):.2f}'
-    return ' '.join([str(n), lg, '.'.join(map(str, tp)) or '-'] + [str(p) for p in primes])
+    return ' '.join([str(n), lg, ','.join(map(str, tp)) or '-'] + [str(p) for p in primes])
 
 
 def verify(path):
@@ -103,7 +103,7 @@ def verify(path):
         if line.startswith('#') or not line.strip():
             continue
         f = line.split()
-        n, tp, ps = int(f[0]), ([] if f[2] == '-' else [int(x) for x in f[2].split('.')]), [int(x) for x in f[3:]]
+        n, tp, ps = int(f[0]), ([] if f[2] == '-' else [int(x) for x in f[2].split(',')]), [int(x) for x in f[3:]]
         assert n not in seen, 'duplicate'
         seen.add(n)
         assert len(set(ps)) == len(ps) and ps == sorted(ps), 'primes not distinct/sorted'

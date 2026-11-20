@@ -25,7 +25,7 @@ With --div57: the numbers divisible by 5 or 7 (columns log10 k divisor generator
 the primes are checked as above, and n == 1 (mod p^2 - 1) at EVERY prime p | n (all are rigid), the divisor is 5
 or 7 and divides n, and the rows are strictly increasing in n within each divisor.
 With --afile: every number in the a-file is in one of the datasets given, with the same prime factors and the same
-primes p ('-' in the a-file means none).
+primes p (separated by commas, or by '.' in the version-1.0 a-file; '-' means none).
 With --searches: the search records (one JSON object per line: L0, p0s, predicted, count, values).  Each distinct
 search (L0, p0s) is counted once; every value it reports must be in the dataset with type_p == p0s and n == 1
 (mod L0); times_found must equal the number of distinct searches reporting n; and every row must come from at
@@ -278,7 +278,7 @@ def main():
                 continue
             t = line.split()
             n = int(t[0])
-            tset = () if t[2] == '-' else tuple(sorted(int(x) for x in t[2].split('.')))
+            tset = () if t[2] == '-' else tuple(sorted(int(x) for x in t[2].replace(',', '.').split('.')))   # v1.0 a-file uses '.', v1.1 ','
             seen += 1
             if good.get(n) != tset or (len(t) > 3 and sorted(int(x) for x in t[3:]) != factors.get(n)):
                 afail += 1
