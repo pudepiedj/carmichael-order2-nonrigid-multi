@@ -1,4 +1,4 @@
-# Carmichael numbers of order 2 with two or three exceptional primes
+# Carmichael numbers of order 2 with two or more exceptional primes, and examples divisible by 5 or 7
 
 This repository publishes **844 Carmichael numbers of order 2** (OEIS [A175531](https://oeis.org/A175531)) that have *two or three* primes $p$ at which
 
@@ -7,6 +7,12 @@ $$n \equiv p \pmod{p^2-1}$$
 instead of $n \equiv 1$. There are **834 with two such primes** and **10 with three**. They were found with Howe's construction, and every one has been verified from scratch.
 
 **These are examples, not a complete list.** A construction finds the numbers on the moduli it is given; it does not sweep everything below a bound. Nothing here says how many such numbers lie below any bound, or that the smallest one found is the smallest that exists.
+
+**Version 1.1 (November 2026)** adds two further sets of examples, each in its own file and checked by the same verifier:
+- **7 more found by a different method**, the Wagner k-tree: 5 with two type-$p$ primes, 1 with three, and **1 with four**. The last has 2,712 digits and 520 prime factors. As far as we know it is the first with four.
+- **556 Carmichael numbers of order 2 divisible by 5 or 7**: 8 divisible by 5 and 548 divisible by 7. All are rigid (no type-$p$ prime). The smallest found have 106 digits (by 5) and 65 digits (by 7), and both were also verified in Lean. No term of A175531 below $10^{30}$ is divisible by 5 or 7.
+
+All 1,407 numbers are in one OEIS a-file, `data/a175531_composite.txt` (see [Files](#files)).
 
 As far as we know, these are the first substantial lists of such numbers. The first examples, 32 with two such primes and 2 with three, were published with the non-rigid dataset [carmichael-order2-nonrigid](https://github.com/pudepiedj/carmichael-order2-nonrigid) and in the A175531 a-file of non-rigid examples. All 34 are included here.
 
@@ -42,6 +48,23 @@ The first is $n = 40691028707694029870828534883993998445929402784810061872637818
 | three | 10 | 123.3 to 160.5 | 4 triples |
 | **all** | **844** | | |
 
+The k-tree finds, in `data/cn2_ktree_multi.tsv`:
+
+| type-$p$ primes | numbers | $\log_{10} n$ | type-$p$ set | $L_0$ |
+|---|---|---|---|---|
+| two | 5 | 1067.3 to 1214.3 | {15361, 64513} | $1950958217452924136658625493624755200$ |
+| three | 1 | 2325.4 | {15361, 64513, 101377} | $12792433031838823564070607361697519846400$ |
+| four | 1 | 2711.3 | {1153, 9601, 20353, 26497} | $6902317147741535239288847084595918052123200 = 2^6\cdot 3^6\cdot 5^2\cdot 7^2\cdot 11^2\cdot 13\cdots 97$ |
+
+The numbers divisible by 5 or 7, in `data/cn2_divisible_5_7.tsv`:
+
+| divisor | numbers | digits | how found |
+|---|---|---|---|
+| 5 | 8 | 106 to 252 | 4 from a Wagner 4-list search; 4 from forced-5 meet-in-the-middle searches of the pools of 5-free divisors of $L_5$ (seven pools searched completely, an eighth in part, 17 not run) |
+| 7 | 548 | 65 to 139 | complete meet-in-the-middle searches of the pool of $L_7$ (323), of $L_7/47$ (14) and $L_7/29$ (1), and of 48 further divisors of $L_7$ (210) |
+
+Every one divisible by 5 is $\equiv 3025 \pmod{5040}$. Each search of a fixed pool is complete for that pool; the lists are complete for nothing else.
+
 The numbers with two type-$p$ primes, by size:
 
 | $\log_{10} n$ | 60s | 70s | 80s | 90s | 100s | 110s | 120s | 130s | 140s |
@@ -71,6 +94,10 @@ The model fits the pairs well. Ten hits against 15.1 predicted for the triples i
 |---|---|
 | `data/cn2_nonrigid_multi.tsv` | the dataset (below) |
 | `data/a175531_multi.txt` | the same 844 numbers as an OEIS a-file: the 10 with three type-$p$ primes, then the 834 with two |
+| `data/cn2_ktree_multi.tsv` | the 7 k-tree finds, in the same format as the dataset |
+| `data/cn2_divisible_5_7.tsv` | the 556 divisible by 5 or 7: `log10`, `k`, `divisor`, `generator` (the modulus searched), `method`, `n`, `primes` |
+| `data/a175531_composite.txt` | the OEIS a-file of all 1,407: Part 1 divisible by 5, Part 2 by 7, Part 3 four type-$p$ primes, Part 4 three, Part 5 two |
+| `data/searches/cn2_ktree_runs.jsonl` | the k-tree run records for sets of two or more type-$p$ primes (7 runs, including 4 null runs) |
 | `data/searches/*.jsonl` | the search records: one line per search, with $L_0$, $T$, pool size, prediction, run time and every value found |
 | `data/targets/` | the priced sets that were searched: `cn2_twin_pairs.json.gz` (pairs) and `cn2_triple_sets.json` (triples) |
 | `data/SHA256SUMS` | SHA-256 hashes of the files above |
@@ -93,8 +120,12 @@ The dataset is tab-separated, with one header line and then one row per number, 
 
 ```bash
 cd data && shasum -a 256 -c SHA256SUMS && cd ..
-python3 verify_multi.py --afile data/a175531_multi.txt --searches data/searches/*.jsonl
+python3 verify_multi.py --afile data/a175531_composite.txt --searches data/searches/cn2_t*.jsonl \
+    --ktree data/cn2_ktree_multi.tsv --ktree-searches data/searches/cn2_ktree_runs.jsonl \
+    --div57 data/cn2_divisible_5_7.tsv
 ```
+
+The original check of version 1.0, `python3 verify_multi.py --afile data/a175531_multi.txt --searches data/searches/cn2_t*.jsonl`, still works.
 
 For every row, `verify_multi.py` checks that:
 - the listed factors are distinct primes, and their product is $n$;
@@ -108,13 +139,16 @@ With `--afile` it checks that every a-file number is in the dataset with the sam
 - `times_found` matches the number of searches reporting each number;
 - every number came from some search.
 
-A search that appears twice in the records, because it was rerun, is counted once. The check then prints the found-against-predicted table above. It needs only Python 3 and takes under a second. The last run gave:
+A search that appears twice in the records, because it was rerun, is counted once. The check then prints the found-against-predicted table above. It needs only Python 3 and takes under a second. With `--ktree` it checks the k-tree rows in the same way, and with `--ktree-searches` that every k-tree row was reported by a run with the same type-$p$ set and $n \equiv 1 \pmod{L_0}$. With `--div57` it checks that every number divisible by 5 or 7 is a product of the listed distinct primes, that 5 or 7 is among them, and that $n \equiv 1 \pmod{p^2-1}$ at every prime. With `--afile` every a-file number must be in one of the datasets with the same factors and the same type-$p$ primes. The last run gave:
 
 ```
 "rows": 844, "verified": 844, "failed": 0, "order_violations": 0
-a-file: 844 numbers, 844 found in the dataset with the same primes p
 2 primes p: 2484 searches, 937 hits against 900.1 predicted, 834 distinct numbers
 3 primes p: 56 searches, 10 hits against 15.1 predicted, 10 distinct numbers
+k-tree: 7 rows, 7 verified; by number of primes p: 2: 5, 3: 1, 4: 1
+k-tree runs: 7 records, 7 reports, every k-tree row accounted for: True
+divisible by 5 or 7: 556 rows, 556 verified (5: 8, 7: 548), smallest with 5: 106 digits, with 7: 65 digits
+a-file: 1407 numbers, 1407 found in the datasets with the same primes p and factors
 ALL ROWS VERIFIED
 ```
 
@@ -154,6 +188,9 @@ The programs in `tools/` are the ones used, copied as they were run:
 | `cn2_triple_harvest.py` | runs the priced sets, best expected yield per hour first, resumably; checks the conditions above |
 | `cn2_nonrigid_collect.py` | merges every search's results, including the one-type-$p$ searches of the earlier dataset, re-verifies them and writes `cn2_nonrigid_all.tsv.gz`; `data/cn2_nonrigid_multi.tsv` is exactly its rows with two or more type-$p$ primes |
 | `cn2_multi_afile.py` | writes the a-file from the dataset |
+| `cn2_ktree.py`, `cn2_rich_multi_scout.py`, `cn2x/fast/cn2kt.c`, `pool2.c`, `ktjoin.c` | the Wagner k-tree (version 1.1): $2^m$ lists over a pool of huge generators, depth-first in C; every hit is verified exactly. It shows existence only and cannot certify a count or a minimum |
+| `div57/` | the searches for numbers divisible by 5 or 7 (version 1.1): `cn2_systematic_fast_chunked.py` (complete MITM of the $L_7$ pool), `mitm7.c` and `mitm7x.c` (forced-7 and forced-5 MITM), `ktree.c` (Wagner 4-list) |
+| `cn2_composite_afile.py` | writes `data/a175531_composite.txt` from the three datasets and re-verifies it |
 
 They need `sympy`, `numpy` and `numba` (see `requirements.txt`), and they read and write their records in their own folder. The scouts read the box table `cn2_box_fecundity.csv`, which is not included. Their outputs, the priced sets actually searched, are in `data/targets/`. To rerun a harvest, copy the sets into `tools/`, for example:
 

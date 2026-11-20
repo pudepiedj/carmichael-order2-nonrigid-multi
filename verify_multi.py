@@ -2,6 +2,8 @@
 """verify_multi.py -- check every number in data/cn2_nonrigid_multi.tsv from scratch, using only the standard library.
 
     python3 verify_multi.py [data/cn2_nonrigid_multi.tsv] [--afile data/a175531_multi.txt] [--searches data/searches/*.jsonl]
+        [--ktree data/cn2_ktree_multi.tsv --ktree-searches data/searches/cn2_ktree_runs.jsonl]
+        [--div57 data/cn2_divisible_5_7.tsv]
 
 The dataset is tab-separated (gzip-compressed if the name ends in .gz), one header line, then one row per number,
 sorted by n:
@@ -15,7 +17,15 @@ For every row this checks that:
   - the primes p with n == p (not 1) mod p^2 - 1 are exactly the listed type_p, and there are at least two;
   - L_R is lcm(q^2 - 1) over the other primes q;
   - the rows are strictly increasing in n, so no number is listed twice.
-With --afile: every number in the a-file is in the dataset with the same primes p.
+With --ktree: a second dataset in the same format (the Wagner k-tree finds), checked row by row in the same way.
+With --ktree-searches: the k-tree run records (L0, p0s, count, values); every value must be in the k-tree dataset with
+type_p == p0s and n == 1 (mod L0), times_found must equal the number of runs reporting n, and every k-tree row must
+come from some run.
+With --div57: the numbers divisible by 5 or 7 (columns log10 k divisor generator method n primes). For every row
+the primes are checked as above, and n == 1 (mod p^2 - 1) at EVERY prime p | n (all are rigid), the divisor is 5
+or 7 and divides n, and the rows are strictly increasing in n within each divisor.
+With --afile: every number in the a-file is in one of the datasets given, with the same prime factors and the same
+primes p ('-' in the a-file means none).
 With --searches: the search records (one JSON object per line: L0, p0s, predicted, count, values).  Each distinct
 search (L0, p0s) is counted once; every value it reports must be in the dataset with type_p == p0s and n == 1
 (mod L0); times_found must equal the number of distinct searches reporting n; and every row must come from at
@@ -93,11 +103,52 @@ def check_row(f):
         return None, None, None, f'unparseable: {e}'
 
 
+def check_div_row(f):
+    """-> (n, divisor, None) if the row is good, else (n or None, None, reason)."""
+    try:
+        if len(f) != 7:
+            return None, None, f'{len(f)} fields'
+        lg, k, dv, _gen, _method, n, ps = f
+        n, dv = int(n), int(dv)
+        primes = [int(x) for x in ps.split()]
+        if len(set(primes)) != len(primes) or primes != sorted(primes):
+            return n, None, 'primes repeated or not sorted'
+        if not all(p < 3 * 10**24 and is_prime(p) for p in primes):
+            return n, None, 'a listed factor is not prime'
+        if int(k) != len(primes) or len(primes) < 2:
+            return n, None, 'k is not the number of primes'
+        if math.prod(primes) != n:
+            return n, None, 'product of primes is not n'
+        if f'{math.log10(n):.3f}' != lg:
+            return n, None, f'log10 {lg} != {math.log10(n):.3f}'
+        if dv not in (5, 7) or dv not in primes:
+            return n, None, f'divisor {dv} is not 5 or 7, or does not divide n'
+        for p in primes:
+            if n % (p * p - 1) != 1:
+                return n, None, f'not rigid at p = {p}'
+        return n, dv, None
+    except Exception as e:
+        return None, None, f'unparseable: {e}'
+
+
+def read_tsv(path, header):
+    op = gzip.open if path.endswith('.gz') else open
+    with op(path, 'rt') as fh:
+        h = fh.readline().rstrip('\n').split('\t')
+        rows = [line.rstrip('\n').split('\t') for line in fh if line.strip()]
+    if h != header:
+        sys.exit(f'{path}: unexpected header {h}')
+    return rows
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('data', nargs='?', default='data/cn2_nonrigid_multi.tsv')
     ap.add_argument('--afile')
     ap.add_argument('--searches', nargs='+', default=[])
+    ap.add_argument('--ktree')
+    ap.add_argument('--ktree-searches', nargs='+', default=[])
+    ap.add_argument('--div57')
     a = ap.parse_args()
     op = gzip.open if a.data.endswith('.gz') else open
     with op(a.data, 'rt') as fh:
@@ -124,20 +175,6 @@ def main():
     print(json.dumps(summary, indent=1))
     for line, n, why in bad[:20]:
         print(f'FAIL line {line}: n = {n}: {why}')
-
-    afail = 0
-    if a.afile:
-        seen = 0
-        for line in open(a.afile):
-            if not line.strip() or line.startswith('#'):
-                continue
-            t = line.split()
-            n, tset = int(t[0]), tuple(sorted(int(x) for x in t[2].split('.')))
-            seen += 1
-            if good.get(n) != tset:
-                afail += 1
-                print(f'A-FILE: {t[0][:30]}... not in the dataset with primes p = {t[2]}')
-        print(f'a-file: {seen} numbers, {seen - afail} found in the dataset with the same primes p')
 
     sfail = 0
     if a.searches:
@@ -169,7 +206,86 @@ def main():
             s, pred, hits, distinct = tally[k]
             print(f'{k} primes p: {s} searches, {hits} hits against {pred:.1f} predicted, {len(distinct)} distinct numbers')
 
-    ok = not bad and not order and not afail and not sfail
+    kfail = 0
+    factors = {int(f[5]): sorted(int(x) for x in f[6].split()) for f in rows}
+    if a.ktree:
+        krows = read_tsv(a.ktree, HEADER)
+        kres = [check_row(f) for f in krows]
+        prev = 0
+        for i, (n, t, c, why) in enumerate(kres):
+            if why or n <= prev or n in good:
+                kfail += 1
+                print(f'K-TREE FAIL line {i + 2}: n = {str(n)[:30]}: {why or "out of order or already in the main dataset"}')
+            prev = n or prev
+        kgood = {n: t for n, t, _, why in kres if not why}
+        ktimes = {n: c for n, _, c, why in kres if not why}
+        for f in krows:
+            factors[int(f[5])] = sorted(int(x) for x in f[6].split())
+        kc = Counter(len(t) for t in kgood.values())
+        print(f'k-tree: {len(krows)} rows, {len(kgood)} verified; by number of primes p: '
+              + ', '.join(f'{k}: {v}' for k, v in sorted(kc.items())))
+        if a.ktree_searches:
+            reported = defaultdict(int)
+            runs = 0
+            for path in a.ktree_searches:
+                for line in open(path):
+                    if not line.strip():
+                        continue
+                    r = json.loads(line)
+                    runs += 1
+                    L0, T = int(r['L0']), tuple(sorted(int(x) for x in r['p0s']))
+                    vals = [int(v) for v in r['values']]
+                    if len(vals) != int(r['count']):
+                        kfail += 1
+                        print(f'K-TREE RUN {T} run {r.get("run")}: count {r["count"]} but {len(vals)} values')
+                    for n in set(vals):
+                        reported[n] += 1
+                        if kgood.get(n) != T or n % L0 != 1:
+                            kfail += 1
+                            print(f'K-TREE RUN {T}: value {str(n)[:30]}... not in the k-tree dataset with these primes p, or n != 1 mod L0')
+            for n in kgood:
+                if reported.get(n, 0) != ktimes[n]:
+                    kfail += 1
+                    print(f'K-TREE TIMES: {str(n)[:30]}... times_found {ktimes[n]} but {reported.get(n, 0)} runs report it')
+            print(f'k-tree runs: {runs} records, {sum(reported.values())} reports, every k-tree row accounted for: {all(n in reported for n in kgood)}')
+        good.update(kgood)
+
+    dfail = 0
+    if a.div57:
+        drows = read_tsv(a.div57, ['log10', 'k', 'divisor', 'generator', 'method', 'n', 'primes'])
+        dres = [check_div_row(f) for f in drows]
+        last = {}
+        for i, (n, dv, why) in enumerate(dres):
+            if not why and (n <= last.get(dv, 0) or n in good):
+                why = 'out of order within its divisor, or already listed'
+            if why:
+                dfail += 1
+                print(f'DIV57 FAIL line {i + 2}: n = {str(n)[:30]}: {why}')
+            else:
+                last[dv] = n
+                good[n] = ()
+                factors[n] = sorted(int(x) for x in drows[i][6].split())
+        dc = Counter(dv for _, dv, why in dres if not why)
+        print(f'divisible by 5 or 7: {len(drows)} rows, {sum(dc.values())} verified (5: {dc[5]}, 7: {dc[7]}), '
+              f'smallest with 5: {min((len(str(n)) for n, dv, w in dres if dv == 5), default=0)} digits, '
+              f'with 7: {min((len(str(n)) for n, dv, w in dres if dv == 7), default=0)} digits')
+
+    afail = 0
+    if a.afile:
+        seen = 0
+        for line in open(a.afile):
+            if not line.strip() or line.startswith('#'):
+                continue
+            t = line.split()
+            n = int(t[0])
+            tset = () if t[2] == '-' else tuple(sorted(int(x) for x in t[2].split('.')))
+            seen += 1
+            if good.get(n) != tset or (len(t) > 3 and sorted(int(x) for x in t[3:]) != factors.get(n)):
+                afail += 1
+                print(f'A-FILE: {t[0][:30]}... not in the datasets with primes p = {t[2]} and the same factors')
+        print(f'a-file: {seen} numbers, {seen - afail} found in the datasets with the same primes p and factors')
+
+    ok = not bad and not order and not afail and not sfail and not kfail and not dfail
     print('ALL ROWS VERIFIED' if ok else 'VERIFICATION FAILED')
     sys.exit(0 if ok else 1)
 
