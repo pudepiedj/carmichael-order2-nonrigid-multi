@@ -59,32 +59,34 @@ def classify(n, primes):
 HEADER = """\
 # Terms of A175531 (Carmichael numbers of order 2) of three special kinds: those divisible by 5 or 7,
 # and those with k == p (mod p^2-1) at two, three or four primes p | k (and k == 1 (mod q^2-1) at
-# every other prime q | k). Call such a p "type-p".
+# every other prime q | k). Call such a p a "type-p" prime: k is non-rigid at p. A term with at least one
+# type-p prime is NON-RIGID; a term with none (k == 1 (mod p^2-1) at every p | k) is rigid.
 # These are EXAMPLES, not complete lists: each part comes from searches of particular moduli
 # (complete searches of particular pools of primes in Parts 1 and 2; Howe's construction in Parts 3-5),
 # not from a search of all k below a bound. The smallest term in each part is the smallest FOUND,
 # not necessarily the smallest that exists. No term below 10^30 is of any of these kinds.
 # Every number below was verified directly: its listed prime factors are distinct primes whose product
 # is k, and for every prime p | k, k == 1 or k == p (mod p^2-1).
-# Columns: k  log10(k)  type-p primes joined by '.' ('-' if none)  prime factors
+# Columns: k  log10(k)  the type-p (non-rigid) primes of k, joined by '.' ('-' if none, i.e. k is rigid)
+#          all prime factors of k, increasing.
 #
-# Part 1: {n1} terms divisible by 5. All are rigid (k == 1 (mod p^2-1) for every p | k).
+# Part 1: {n1} terms divisible by 5. All are rigid.
 #   The smallest, {d1} digits, was verified in Lean (CN2Lean/Counterexample5.lean).
 # Part 2: {n2} terms divisible by 7. All are rigid.
 #   The smallest, {d2} digits, was verified in Lean (CN2Lean/Counterexample7.lean).
-# Part 3: {n3} term with four type-p primes, {d3} digits, {k3} prime factors.
-# Part 4: {n4} terms with three type-p primes.
-# Part 5: {n5} terms with two type-p primes.
+# Part 3: {n3} non-rigid term with four type-p primes, {d3} digits, {k3} prime factors.
+# Part 4: {n4} non-rigid terms with three type-p primes.
+# Part 5: {n5} non-rigid terms with two type-p primes.
 # The terms of Parts 3-5 include all those with two or more type-p primes in the a-file of
 # non-rigid examples already linked from A175531.
 # Source and verifier: https://github.com/pudepiedj/carmichael-order2-nonrigid-multi
 """
 
-TITLES = {1: 'Part 1: terms divisible by 5.',
-          2: 'Part 2: terms divisible by 7.',
-          3: 'Part 3: terms with four type-p primes.',
-          4: 'Part 4: terms with three type-p primes.',
-          5: 'Part 5: terms with two type-p primes.'}
+TITLES = {1: 'Part 1: terms divisible by 5 (rigid).',
+          2: 'Part 2: terms divisible by 7 (rigid).',
+          3: 'Part 3: non-rigid terms with four type-p primes.',
+          4: 'Part 4: non-rigid terms with three type-p primes.',
+          5: 'Part 5: non-rigid terms with two type-p primes.'}
 
 
 def fmt(n, primes, tp):

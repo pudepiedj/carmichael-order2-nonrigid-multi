@@ -1,14 +1,25 @@
 # Carmichael numbers of order 2 with two or more exceptional primes, and examples divisible by 5 or 7
 
-This repository publishes **844 Carmichael numbers of order 2** (OEIS [A175531](https://oeis.org/A175531)) that have *two or three* primes $p$ at which
+This repository publishes **1,407 Carmichael numbers of order 2** (OEIS [A175531](https://oeis.org/A175531)), every one verified from scratch:
 
-$$n \equiv p \pmod{p^2-1}$$
+- **851 with two or more primes $p$ at which**
 
-instead of $n \equiv 1$. There are **834 with two such primes** and **10 with three**. They were found with Howe's construction, and every one has been verified from scratch.
+  $$n \equiv p \pmod{p^2-1}$$
+
+  instead of $n \equiv 1$: **839 with two** such primes, **11 with three** and **1 with four**. The one with four has 2,712 digits and 520 prime factors. As far as we know it is the first.
+- **556 divisible by 5 or 7**: 8 by 5 and 548 by 7. None of these has such a prime.
+
+| | numbers | smallest found | file |
+|---|---|---|---|
+| two type-$p$ primes | 839 | $\approx 4.07\cdot 10^{66}$ | `cn2_nonrigid_multi.tsv` (834), `cn2_ktree_multi.tsv` (5) |
+| three type-$p$ primes | 11 | $\approx 1.96\cdot 10^{123}$ | `cn2_nonrigid_multi.tsv` (10), `cn2_ktree_multi.tsv` (1) |
+| **four type-$p$ primes** | **1** | $\approx 1.87\cdot 10^{2711}$ | `cn2_ktree_multi.tsv` |
+| divisible by 5 | 8 | 106 digits | `cn2_divisible_5_7.tsv` |
+| divisible by 7 | 548 | 65 digits | `cn2_divisible_5_7.tsv` |
 
 **These are examples, not a complete list.** A construction finds the numbers on the moduli it is given; it does not sweep everything below a bound. Nothing here says how many such numbers lie below any bound, or that the smallest one found is the smallest that exists.
 
-**Version 1.1 (November 2026)** adds two further sets of examples, each in its own file and checked by the same verifier:
+Version 1.0 held the 844 found with Howe's construction. **Version 1.1 (20 November 2026)** adds two further sets of examples, each in its own file and checked by the same verifier:
 - **7 more found by a different method**, the Wagner k-tree: 5 with two type-$p$ primes, 1 with three, and **1 with four**. The last has 2,712 digits and 520 prime factors. As far as we know it is the first with four.
 - **556 Carmichael numbers of order 2 divisible by 5 or 7**: 8 divisible by 5 and 548 divisible by 7. All are rigid (no type-$p$ prime). The smallest found have 106 digits (by 5) and 65 digits (by 7), and both were also verified in Lean. No term of A175531 below $10^{30}$ is divisible by 5 or 7.
 
@@ -27,7 +38,7 @@ $$n \equiv 1 \ \text{ or } \ n \equiv p \pmod{p^2-1} \quad\text{for every prime 
 | rigid | $n \equiv 1 \pmod{p^2-1}$ | the identity |
 | **type $p$** | $n \equiv p \pmod{p^2-1}$ | conjugation, $a+b\sqrt d \mapsto a-b\sqrt d$ |
 
-Below, a **type-$p$ prime** of $n$ means a prime $p \mid n$ with $n \equiv p \pmod{p^2-1}$. A number with at least one is **non-rigid**. Most known non-rigid numbers have exactly one; this repository collects those with two or three. Every number here also has rigid primes: between 21 and 51 of them.
+Below, a **type-$p$ prime** of $n$ means a prime $p \mid n$ with $n \equiv p \pmod{p^2-1}$. A number with at least one is **non-rigid**. Most known non-rigid numbers have exactly one; this repository collects those with two, three or four. Every number here also has rigid primes: between 21 and 516 of them.
 
 ## The smallest examples
 
